@@ -13,6 +13,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@qdrant/js-client-rest": "^1.16.2",
     "dotenv": "^16.6.1",
     "express": "^5.2.1",
     "morgan": "^1.10.1",
