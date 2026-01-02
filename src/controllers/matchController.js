@@ -42,17 +42,21 @@ export async function match(req, res, next) {
     
 
     // Stage 2: Reranking using bipartite matching (top N)
-    const resultIds = await fetchBipartiteMatchResults([queryVectorA, queryVectorB], candidateArchetypeIds, topN);
-    const resultIdsSet = new Set(resultIds);
-    // Get full data for top N candidate ids from candidates array
-    const results = candidates.filter(c => resultIdsSet.has(String(c.payload?.archetypeId)));
-    // console.log("results[0] ==> ", results[0])
+    const topNResults = await fetchBipartiteMatchResults([queryVectorA, queryVectorB], candidateArchetypeIds, topN);
+    // console.log("topNResults ==> ", topNResults, candidates[0])
+
+    // Get payload for top N candidate ids from candidates array and score from topNResults
+    const results = topNResults.map(({ archetypeId, score }) => {
+      const { payload } = candidates.find(c => String(c.payload?.archetypeId) === String(archetypeId));
+      return { payload, score };
+    });
+    
     // Format results as needed for response and send back
     return res.status(200).json({
       error: false,
       data: {
         imageUrls: [],
-        matchesFoundCount: resultIds.length,
+        matchesFoundCount: topNResults.length,
         matches: results.map(formatResults)
       }
     });

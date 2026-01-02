@@ -62,11 +62,14 @@ export async function fetchBipartiteMatchResults(queryVectors, candidateArchetyp
 
     // Helper: cosine similarity (assumes vectors are already normalized)
     const cosineSim = (a, b) => {
-      let sum = 0;
+      let dot = 0, na = 0, nb = 0;
       for (let i = 0; i < a.length; i++) {
-        sum += a[i] * b[i];
+        dot += a[i] * b[i];
+        na += a[i] * a[i];
+        nb += b[i] * b[i];
       }
-      return sum;
+      const denom = Math.sqrt(na) * Math.sqrt(nb) || 1e-12;
+      return Math.max(-1, Math.min(1, dot / denom));
     };
 
     // Fetch all candidate points by archetypeId
@@ -118,7 +121,8 @@ export async function fetchBipartiteMatchResults(queryVectors, candidateArchetyp
 
     // Sort by score descending and return top N archetype IDs
     scores.sort((a, b) => b.score - a.score);
-    return scores.slice(0, topN).map(item => item.archetypeId);
+    // console.log("scores in bipartite matching: ", scores.slice(0, topN));
+    return scores.slice(0, topN) //.map(item => item.archetypeId);
   } catch (error) {
     console.error('==> Error in fetchBipartiteMatchResults:', error);
     throw error;
