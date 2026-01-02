@@ -60,8 +60,10 @@ export async function match(req, res, next) {
     console.log('==> Max K Score: ', maxKScore);
 
     // Stage 2: Reranking using bipartite matching (top N)
-    const topNResults = await fetchBipartiteMatchResults([queryVectorA, queryVectorB], candidateArchetypeIds, topN);
+    let topNResults = await fetchBipartiteMatchResults([queryVectorA, queryVectorB], candidateArchetypeIds, topN);
     // console.log("topNResults ==> ", topNResults, candidates[0])
+    // Soft trim to top N:
+    topNResults = topNResults.slice(0, topN);
 
     // Get payload for top N candidate ids from candidates array and score from topNResults
     const results = topNResults.map(({ archetypeId, score }) => {

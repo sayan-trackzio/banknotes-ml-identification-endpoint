@@ -122,7 +122,8 @@ export async function fetchBipartiteMatchResults(queryVectors, candidateArchetyp
     // Sort by score descending and return top N archetype IDs
     scores.sort((a, b) => b.score - a.score);
     // console.log("scores in bipartite matching: ", scores.slice(0, topN));
-    return scores.slice(0, topN) //.map(item => item.archetypeId);
+    // return scores.slice(0, topN) //.map(item => item.archetypeId);
+    return scores; // to be sliced upstream
   } catch (error) {
     console.error('==> Error in fetchBipartiteMatchResults:', error);
     throw error;
