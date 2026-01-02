@@ -1,6 +1,6 @@
 import { QdrantClient } from '@qdrant/js-client-rest';
 
-const {qdrantUrl, apiKey } = process.env;
+const {QDRANT_URL: qdrantUrl, QDRANT_API_KEY: apiKey } = process.env;
 if (!qdrantUrl) {
   throw new Error('QDRANT_URL environment variable is not set. Please configure QDRANT_URL to initialize QdrantClient.');
 }
@@ -10,7 +10,7 @@ if (!apiKey) {
   );
 }
 
-const qdrantConfig = { url: qdrantUrl };
+const qdrantConfig = { url: qdrantUrl, checkCompatibility: false };
 if (apiKey) qdrantConfig.apiKey = apiKey;
 
 const qdrant = new QdrantClient(qdrantConfig);
