@@ -12,6 +12,16 @@ export async function match(req, res, next) {
     const topK = parseInt(process.env.TOP_K || '300', 10);
     const topN = parseInt(process.env.TOP_N || '5', 10);
 
+    // Optional numista query parameter (e.g., ?n=12345)
+    const numistaQuery = req.query?.n ? String(req.query.n).trim() : null;
+
+    // Utility to extract numeric part from strings like 'N# 12345'
+    const extractNumistaNumber = (val) => {
+      if (!val) return null;
+      const m = String(val).match(/\d+/);
+      return m ? m[0] : null;
+    };
+
     // Basic validation of uploaded files before processing
     if (!req.files || !Array.isArray(req.files) || req.files.length < 2) {
       return res.status(400).json({
@@ -19,7 +29,6 @@ export async function match(req, res, next) {
         reason: 'Two input files are required for matching'
       });
     }
-    // console.log(req.files);
     
     // Stage 0: Preprocessing (e.g., feature extraction)
     const [queryVectorA, queryVectorB] = await generateEmbeddings(req.files);
@@ -38,8 +47,17 @@ export async function match(req, res, next) {
     candidates = candidates.slice(0, topK);
     const candidateArchetypeIds = candidates.map(c => String(c.payload?.archetypeId));
     // console.log(candidateArchetypeIds);
-    
-    
+
+    // Stage 1 ranking: compute topK rank for optional numista query (1-based, 0 means not found)
+    let topKRank = 0;
+    if (numistaQuery) {
+      const idx = candidates.findIndex(c => extractNumistaNumber(c?.payload?.archetypeDetails?.archetypeDetails?.numistaItemNumber) === String(numistaQuery));
+      topKRank = idx === -1 ? 0 : idx + 1;
+      console.info(`[Ranking] topK rank for numista ${numistaQuery}: ${topKRank}`);
+    }
+
+    let maxKScore = candidates[0]?.score;
+    console.log('==> Max K Score: ', maxKScore);
 
     // Stage 2: Reranking using bipartite matching (top N)
     const topNResults = await fetchBipartiteMatchResults([queryVectorA, queryVectorB], candidateArchetypeIds, topN);
@@ -51,14 +69,32 @@ export async function match(req, res, next) {
       return { payload, score };
     });
     
+    // Stage 2 ranking: compute topN rank for the optional numista query
+    let topNRank = 0;
+    if (numistaQuery) {
+      const idx = results.findIndex(r => extractNumistaNumber(r.payload?.archetypeDetails?.archetypeDetails?.numistaItemNumber) === String(numistaQuery));
+      topNRank = idx === -1 ? 0 : idx + 1;
+      console.info(`[Ranking] topN rank for numista ${numistaQuery}: ${topNRank}`);
+    }
+
+    let maxNScore = topNResults[0]?.score;
+    console.log('==> Max N Score: ', maxNScore);
+
     // Format results as needed for response and send back
     return res.status(200).json({
       error: false,
       data: {
         imageUrls: [],
         matchesFoundCount: topNResults.length,
-        matches: results.map(formatResults)
-      }
+        matches: results.map(formatResults),
+      },
+      rank: numistaQuery ? {
+        numista: numistaQuery ? Number(numistaQuery) : null,
+        topK: topKRank,
+        topN: topNRank,
+        maxKScore,
+        maxNScore,
+      } : undefined
     });
   } catch (error) {
     console.error('==> Error in match controller:', error);
