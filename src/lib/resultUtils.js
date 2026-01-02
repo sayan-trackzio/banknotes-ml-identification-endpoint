@@ -20,19 +20,23 @@
  * - Returns candidates sorted by `score` descending (missing score treated as 0).
  */
 export function mergeCandidates(dedupKey = 'archetypeId', ...candidates) {
-	const all = [].concat(...arrs.filter(Array.isArray))
+	const all = [].concat(...candidates.filter(Array.isArray))
 
 	const byKey = new Map();
 
 	for (const candidate of all) {
 		if (!candidate || typeof candidate !== 'object') continue;
 
-		const existing = byKey.get(dedupKey);
+		// Get the dedup key value from candidate.payload
+		const keyValue = candidate.payload?.[dedupKey];
+		if (keyValue == null) continue;
+
+		const existing = byKey.get(keyValue);
 		const score = Number(candidate.score ?? 0);
 		const existingScore = existing ? Number(existing.score ?? 0) : -Infinity;
 
 		if (!existing || score > existingScore) {
-			byKey.set(dedupKey, candidate);
+			byKey.set(keyValue, candidate);
 		}
 	}
 
@@ -47,9 +51,17 @@ export function mergeCandidates(dedupKey = 'archetypeId', ...candidates) {
  * Placeholder behavior: returns the candidate as-is, ensuring `id` is string.
  */
 export function formatResults(candidate) {
-	if (!candidate || typeof candidate !== 'object') return candidate;
-	return {
-		...candidate,
-		id: candidate.id != null ? String(candidate.id) : candidate.id,
-	};
+
+  const nn = candidate?.payload?.archetypeDetails?.archetypeDetails?.numistaItemNumber.replace('N# ', '');
+
+  return {
+    ...candidate.payload?.archetypeDetails?.archetypeDetails,
+    _id: candidate.payload?.archetypeId,
+    archetypeImageUrls: [
+      `https://trackzio-archetype-images.s3.us-west-2.amazonaws.com/banknotes/${nn}_A.jpg`,
+      `https://trackzio-archetype-images.s3.us-west-2.amazonaws.com/banknotes/${nn}_B.jpg`
+    ],
+    imageUrls: undefined,
+    similarityScore: `${candidate.score ?? 0}`,
+  }
 }
