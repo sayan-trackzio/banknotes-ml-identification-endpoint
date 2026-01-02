@@ -1,22 +1,31 @@
-// Minimal embedding service stub (ESM)
-// Replace with real feature extraction (model inference) implementation.
-// Exports:
-//  - generateEmbeddings(files): accepts an array of uploaded files (multer file objects)
-//    and returns a promise resolving to [vecA, vecB] where each vec is a Float32Array
+// Minimal embedding service — simplified for production
+// - Assumes inputs are image files (multer file objects with `buffer`)
+// - Uses batch feature extraction with pooling and normalization
+// - Caches models to avoid re-downloads
+
+import { pipeline } from '@huggingface/transformers';
+
+// Optional (recommended for prod): avoids re-downloading models
+// process.env.TRANSFORMERS_CACHE = './models';
+
+let extractor = null;
+async function initExtractor() {
+  if (extractor) return extractor;
+  const modelName = process.env.EMBED_MODEL || 'Xenova/dinov2-small';
+  extractor = await pipeline('image-feature-extraction', modelName);
+  return extractor;
+}
 
 export async function generateEmbeddings(files) {
-  // files: array of multer file objects (buffer, mimetype, originalname, etc.)
-  const dim = parseInt(process.env.EMBED_DIM || '384', 10);
+  const inputs = Array.isArray(files) ? files : Array.from(arguments);
+  const pipe = await initExtractor();
 
-  // Placeholder: return zero vectors. Replace with real model extraction.
-  const makeZero = () => {
-    const a = new Float32Array(dim);
-    for (let i = 0; i < dim; i++) a[i] = 0.0;
-    return a;
-  };
+  // Batch feature extraction
+  const embeddings = await pipe(inputs.map(f => f.buffer), {
+    pooling: 'mean',   // global image embedding
+    normalize: true,   // cosine-sim ready
+  });
 
-  // Expect at least two files; gracefully handle fewer
-  const vecA = makeZero();
-  const vecB = makeZero();
-  return [vecA, vecB];
+  return embeddings;
 }
+
