@@ -3,6 +3,7 @@ import express from 'express';
 import multer from 'multer';
 import morgan from 'morgan';
 import * as matchController from './controllers/matchController.js';
+import * as searchController from './controllers/searchController.js';
 import { fileURLToPath } from 'url';
 
 const app = express();
@@ -20,6 +21,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 // Mount controller directly (expects two files in field 'images')
 app.post('/match', upload.array('images', 2), matchController.match);
+app.post('/search', upload.array('images', 2), searchController.match);
 
 // Start server when run directly
 const __filename = fileURLToPath(import.meta.url);
