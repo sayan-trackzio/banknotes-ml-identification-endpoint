@@ -1,7 +1,7 @@
 import qdrant from '../qdrantClient.js';
 
 export async function annSearch(qVecs) {
-  const coinMap = new Map();
+  const itemMap = new Map();
   const collection = process.env.QDRANT_COLLECTION;
   if (!collection) {
     throw new Error('QDRANT_COLLECTION environment variable is not set.');
@@ -24,17 +24,17 @@ export async function annSearch(qVecs) {
     if (!batch || !batch.points) continue;
 
     for (const hit of batch.points) {
-      const coinId = hit.payload.archetypeId;
+      const itemId = hit.payload.archetypeId;
       const score = hit.score;
 
-      const prev = coinMap.get(coinId);
+      const prev = itemMap.get(itemId);
       if (!prev || score > prev.ann_score) {
-        coinMap.set(coinId, { coin_id: coinId, ann_score: score, payload: hit.payload });
+        itemMap.set(itemId, { item_id: itemId, ann_score: score, payload: hit.payload });
       }
     }
   }
 
-  return [...coinMap.values()]
+  return [...itemMap.values()]
     .sort((a, b) => b.ann_score - a.ann_score)
     .map((c, i) => ({ ...c, ann_rank: i + 1 }));
 }

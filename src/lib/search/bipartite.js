@@ -1,7 +1,7 @@
 import qdrant from '../qdrantClient.js';
 
-// Fetch coin vectors (2 per coin)
-async function fetchCoinVectors(coinIds) {
+// Fetch item vectors (2 per item)
+async function fetchItemVectors(itemIds) {
   const collection = process.env.QDRANT_COLLECTION;
   if (!collection) {
     throw new Error('QDRANT_COLLECTION environment variable is not set.');
@@ -9,20 +9,20 @@ async function fetchCoinVectors(coinIds) {
   const res = await qdrant.scroll(collection, {
     filter: {
       must: [
-        { key: "archetypeId", match: { any: coinIds } }
+        { key: "archetypeId", match: { any: itemIds } }
       ]
     },
     with_vector: true,
     with_payload: true,
-    limit: coinIds.length * 2
+    limit: itemIds.length * 2
   });
 
   const map = new Map();
 
   for (const p of res.points) {
-    const coinId = p.payload.archetypeId;
-    if (!map.has(coinId)) map.set(coinId, []);
-    map.get(coinId).push(p.vector);
+    const itemId = p.payload.archetypeId;
+    if (!map.has(itemId)) map.set(itemId, []);
+    map.get(itemId).push(p.vector);
   }
 
   return map;
@@ -54,11 +54,11 @@ function bipartiteScore(qVecs, cVecs) {
 
 // Add BP features to recall candidates set
 export async function addBpScores(buffer, qVecs) {
-  const coinIds = buffer.map(c => c.coin_id);
-  const coinVecMap = await fetchCoinVectors(coinIds);
+  const itemIds = buffer.map(c => c.item_id);
+  const itemVecMap = await fetchItemVectors(itemIds);
 
   return buffer.map(c => {
-    const cVecs = coinVecMap.get(c.coin_id);
+    const cVecs = itemVecMap.get(c.item_id);
     if (!cVecs || cVecs.length !== 2) {
       return { ...c, bp_best: 0, bp_gap: 0 };
     }
