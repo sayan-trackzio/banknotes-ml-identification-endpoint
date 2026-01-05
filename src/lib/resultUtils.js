@@ -62,6 +62,6 @@ export function formatResults(candidate) {
       `https://trackzio-archetype-images.s3.us-west-2.amazonaws.com/banknotes/${nn}_B.jpg`
     ],
     imageUrls: undefined,
-    similarityScore: candidate._finalScore,
+    similarityScore: `${candidate._percentileScore?.toFixed(2)}% (${candidate._finalScore})` || 'N/A',
   }
 }
