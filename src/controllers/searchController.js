@@ -5,12 +5,13 @@ import { annSearch } from '../lib/search/ann.js';
 import { addBpScores } from '../lib/search/bipartite.js';
 import { formatResults } from '../lib/resultUtils.js';
 
-// Final composite scoring function
-function finalScore(c) {
+function heuristicScorer(c) {
+  const rankBonus = 1 / (1 + c.ann_rank);
+
   return (
-    0.7  * c.ann_score -
-    0.3  * Math.log(c.ann_rank + 1) +
-    0.7  * c.bp_best +
+    0.8 * c.ann_score +   // primary signal
+    0.3 * rankBonus +     // bounded, stable
+    0.6 * c.bp_best +     // business signal
     0.15 * c.bp_gap
   );
 }
@@ -49,7 +50,6 @@ function computePercentile(score, universe) {
 }
 
 
-
 export async function match(req, res, next) {
 
   try {
@@ -69,16 +69,16 @@ export async function match(req, res, next) {
 
     // Stage 1: Initial ANN search for recall
     const annResults = await annSearch(qVecs);
-    const recallResults = annResults.slice(0, ANN_RECALL_SIZE);
+    const recallResults = annResults.slice(0, ANN_RECALL_SIZE); // soft trim for BP stage
     
     // Stage 2: Add Bipartite scores
     const recallResultsWithBp = await addBpScores(recallResults, qVecs);
 
     // Stage 3: Final rerank
     let ranked = recallResultsWithBp
-      .map(c => ({ ...c, _finalScore: finalScore(c) }))
+      .map(c => ({ ...c, _finalScore: heuristicScorer(c) }))
       .sort((a, b) => b._finalScore - a._finalScore)
-      .slice(0, TOP_N);
+      .slice(0, TOP_N); // soft trim for response size
 
     // Compute & add percentile scores (aprox for UI)
     ranked = ranked.map(c => ({
