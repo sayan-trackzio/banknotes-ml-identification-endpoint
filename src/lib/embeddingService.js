@@ -32,8 +32,8 @@ export async function generateEmbeddings(files) {
       normalize: true,
     });
 
-    console.log('Embeddings tensor dims:', embeddings.dims);
-    console.log('Embeddings tensor type:', embeddings.type);
+    // console.log('Embeddings tensor dims:', embeddings.dims);
+    // console.log('Embeddings tensor type:', embeddings.type);
     
     // Handle different tensor shapes
     const dims = embeddings.dims;

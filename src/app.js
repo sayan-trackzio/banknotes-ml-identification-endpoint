@@ -30,7 +30,7 @@ if (process.argv[1] === __filename) {
       console.error('Failed to start server:', err);
       process.exit(1);
     }
-    console.log(`Query API listening on port ${PORT}`);
+    console.info(`Query API listening on port ${PORT}`);
   });
 }
 

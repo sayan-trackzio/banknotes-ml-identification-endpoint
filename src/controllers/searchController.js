@@ -1,8 +1,8 @@
 // Controller placeholder for /match
 // The handler accepts files from req.files (array of uploaded files via multer)
 import { generateEmbeddings } from '../lib/embeddingService.js';
-import { annSearch } from '../lib/search/ann.js';
-import { addBpScores } from '../lib/search/bipartite.js';
+import { annSearch } from '../lib/annService.js';
+import { addBpScores } from '../lib/bipartiteService.js';
 import { formatResults } from '../lib/resultUtils.js';
 
 import { init as cuidInit } from '@paralleldrive/cuid2';
@@ -149,8 +149,8 @@ export async function match(req, res, next) {
         if (process.env.LOG_QUERY_AND_EXIT === 'true') {
           return res.status(200).json({ error: false, queryId: query_id }); // early return for training logs
         }
-      } catch (error) {
-        console.log('==> Query logging Failed:', error);
+      } catch (queryLogError) {
+        console.warn('==> Query logging Failed:', queryLogError);
         if (process.env.LOG_QUERY_AND_EXIT === 'true') {
           return res.status(500).json({ error: true, reason: error.message }); // early return for training logs
         }
@@ -166,8 +166,8 @@ export async function match(req, res, next) {
     // Actually upload user images to S3 in the background (non-blocking)
     if (process.env.S3_UPLOAD_ENABLED === 'true') {
       import('../lib/s3Utils.js').then(({ uploadToS3InBackground }) => {
-        uploadToS3InBackground(req.files).catch(err => {
-          console.error('==> Background S3 upload failed:', err);
+        uploadToS3InBackground(req.files).catch(s3ulError => {
+          console.warn('==> Background S3 upload failed:', s3ulError.message);
         });
       });      
     }
@@ -184,7 +184,7 @@ export async function match(req, res, next) {
       },
     });
   } catch (error) {
-    console.error('==> Error in match controller:', error);
+    console.error('==> Error in search controller:', error);
     return res.status(500).json({ error: true, reason: 'Internal server error' });
   }
 }

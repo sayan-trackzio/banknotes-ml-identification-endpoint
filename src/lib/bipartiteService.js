@@ -1,4 +1,4 @@
-import qdrant from '../qdrantClient.js';
+import qdrant from './qdrantClient.js';
 
 // Fetch item vectors (2 per item)
 async function fetchItemVectors(itemIds) {

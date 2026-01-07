@@ -43,7 +43,8 @@ export async function uploadToS3InBackground(files) {
     try {
       await s3.send(new PutObjectCommand(params));
     } catch (err) {
-      console.error(`S3 upload failed for ${Key}:`, err);
+      console.error(`==> S3 upload failed for ${Key}:`, err);
+      thow err;
     }
   }));
 }

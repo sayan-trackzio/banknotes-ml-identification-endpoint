@@ -1,4 +1,4 @@
-import qdrant from '../qdrantClient.js';
+import qdrant from './qdrantClient.js';
 
 export async function annSearch(qVecs) {
   const itemMap = new Map();
