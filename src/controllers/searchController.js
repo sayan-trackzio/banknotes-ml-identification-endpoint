@@ -100,8 +100,34 @@ export async function match(req, res, next) {
     let ranked = recallResultsWithBp
       .map(c => ({ ...c, _finalScore: heuristicScorer(c) }))
       .sort((a, b) => b._finalScore - a._finalScore)
-      .slice(0, TOP_N); // soft trim for response size
 
+    // Optional logging to GCS sink
+    if (process.env.LOG_QUERY_METRICS === 'true' && req.query.gtid) {
+      try {
+        const { init: cuidInit} = await import('@paralleldrive/cuid2');
+        const cuidGen = (n = 11) => cuidInit({ length: n })();
+        const { logQuery } = await import('../lib/queryLogs.js');
+
+        const query_id = cuidGen();        
+        await logQuery({
+          query_id,
+          gt_id: req.query.gtid, // gt --> ground truth (expected correct archteypeId for match)
+          is_image_normalized: !Boolean(req.query.gtaug),
+          candidates: ranked
+        });
+        if (process.env.LOG_QUERY_AND_EXIT === 'true') {
+          return res.status(200).json({ error: false, queryId: query_id }); // early return for training logs
+        }
+      } catch (error) {
+        console.log('==> Query logging Failed:', error);
+        if (process.env.LOG_QUERY_AND_EXIT === 'true') {
+          return res.status(500).json({ error: true, reason: error.message }); // early return for training logs
+        }
+      }
+    }
+
+    ranked = ranked.slice(0, TOP_N); // final trim for response
+    
     // Compute & add percentile scores (aprox for UI)
     ranked = ranked.map(c => ({
       ...c,
