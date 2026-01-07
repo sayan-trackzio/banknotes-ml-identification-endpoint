@@ -171,16 +171,25 @@ export async function match(req, res, next) {
         });
       });      
     }
+
+    let heuristicHead = ranked.slice(0, TOP_N); // soft trim for final response
+
+    if (process.env.APPLY_XGBOOST_OPTIMIZATION === 'true' && process.env.XGBOOST_SCORE_API_URL?.startsWith('http')) {
+      const { optimizeHead } = await import('../lib/xgboostScorer.js');
+      heuristicHead = await optimizeHead({
+        candidates: ranked,
+        topN: TOP_N,
+        extraCandidatesSize: process.env.XGBOOST_EXTRA_CANDIDATES_SIZE ? Number(process.env.XGBOOST_EXTRA_CANDIDATES_SIZE) : 5
+      });
+    }
     
     // Send final response back to client
     return res.json({
       error: false,
       data: {
         imageUrls: req.files.map(f => f.permalink),
-        matchesFoundCount: ranked.length,
-        matches: ranked
-          .slice(0, TOP_N) // soft trim for final response
-          .map(formatResults),
+        matchesFoundCount: heuristicHead.length,
+        matches: heuristicHead.map(formatResults),
       },
     });
   } catch (error) {
