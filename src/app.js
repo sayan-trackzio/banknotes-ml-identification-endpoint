@@ -2,7 +2,6 @@ import 'dotenv/config';
 import express from 'express';
 import multer from 'multer';
 import morgan from 'morgan';
-import * as matchController from './controllers/matchController.js';
 import * as searchController from './controllers/searchController.js';
 import { fileURLToPath } from 'url';
 
@@ -13,14 +12,13 @@ app.use(morgan(process.env.MORGAN_FORMAT || 'dev'));
 
 // Health check endpoint
 app.all('/health', (req, res) => {
-  res.status(200).json({ status: 'ok' });
+  return res.status(200).json({ status: 'ok' });
 });
 
 // Multer in-memory upload
 const upload = multer({ storage: multer.memoryStorage() });
 
 // Mount controller directly (expects two files in field 'images')
-app.post('/match', upload.array('images', 2), matchController.match);
 app.post('/search', upload.array('images', 2), searchController.match);
 
 // Start server when run directly

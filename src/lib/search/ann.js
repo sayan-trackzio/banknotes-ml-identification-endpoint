@@ -7,7 +7,7 @@ export async function annSearch(qVecs) {
     throw new Error('QDRANT_COLLECTION environment variable is not set.');
   }
 
-  const ANN_OVERFETCH_SIZE = Number(process.env.ANN_OVERFETCH_SIZE ?? 2000);
+  const ANN_OVERFETCH_SIZE = Number(process.env.ANN_OVERFETCH_SIZE ?? 1000);
 
   // Prepare batch search requests
   const searches = qVecs.map(vector => ({

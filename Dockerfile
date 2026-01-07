@@ -1,5 +1,5 @@
 # Simple Dockerfile for the Query API (production)
-FROM node:22-slim
+FROM node:22-bullseye
 
 # Create app directory
 WORKDIR /usr/src/app

@@ -5,6 +5,16 @@ import { annSearch } from '../lib/search/ann.js';
 import { addBpScores } from '../lib/search/bipartite.js';
 import { formatResults } from '../lib/resultUtils.js';
 
+/**
+ * Calculates a heuristic score for a candidate object based on multiple weighted signals.
+ *
+ * @param {Object} c - The candidate object to score.
+ * @param {number} c.ann_score - The primary signal score (e.g., from an ANN search).
+ * @param {number} c.ann_rank - The rank of the candidate in the ANN results (lower is better).
+ * @param {number} c.bp_best - A business-specific signal representing the best score.
+ * @param {number} c.bp_gap - A business-specific signal representing the score gap.
+ * @returns {number} The computed heuristic score for the candidate.
+ */
 function heuristicScorer(c) {
   const rankBonus = 1 / (1 + c.ann_rank);
 
@@ -16,6 +26,17 @@ function heuristicScorer(c) {
   );
 }
 
+
+/**
+ * Computes the percentile rank of a given score within a universe of values,
+ * assuming a normal distribution. Uses the normal cumulative distribution function (CDF)
+ * to estimate the percentile.
+ * NOTE: These are aproximations for UI purposes and not exact percentiles.
+ *
+ * @param {number} score - The score for which to compute the percentile.
+ * @param {number[]} universe - An array of numbers representing the universe of scores.
+ * @returns {number} The percentile rank of the score (0 to 100).
+ */
 function computePercentile(score, universe) {
   const mean = arr => arr.reduce((a, b) => a + b, 0) / arr.length;
 
@@ -50,6 +71,7 @@ function computePercentile(score, universe) {
 }
 
 
+/* Controller / Handler for `/match` endpoint */
 export async function match(req, res, next) {
 
   try {
