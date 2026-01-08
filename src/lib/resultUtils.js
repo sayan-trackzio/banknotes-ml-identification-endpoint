@@ -5,10 +5,10 @@
  */
 export function formatResults(candidate) {
 	const ARCHETYPE_IMAGES_BASE_URL = process.env.ARCHETYPE_IMAGES_BASE_URL ?? 'https://trackzio-archetype-images.s3.us-west-2.amazonaws.com/banknotes';
-  const nn = candidate?.payload?.archetypeDetails?.archetypeDetails?.numistaItemNumber.replace('N# ', '');
+  const nn = candidate?.payload?.archetypeDetails?.numistaItemNumber.replace('N# ', '');
 
   return {
-    ...candidate.payload?.archetypeDetails?.archetypeDetails,
+    ...candidate.payload?.archetypeDetails,
     _id: candidate.payload?.archetypeId,
     archetypeImageUrls: [
       `${ARCHETYPE_IMAGES_BASE_URL}/${nn}_A.jpg`,

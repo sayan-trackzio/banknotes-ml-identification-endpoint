@@ -15,7 +15,7 @@ export async function logQuery({ query_id, gt_id, is_image_normalized, candidate
     candidate_id: c.item_id,
     final_score: c._finalScore,
     final_rank: sortedByFinalScore.findIndex(sc => sc.item_id === c.item_id) + 1,
-    numista_id: c.payload?.archetypeDetails?.archetypeDetails?.numistaItemNumber,
+    numista_id: c.payload?.archetypeDetails?.numistaItemNumber,
 
     // Params which may be used to train a reranker model
     ann_rank: c.ann_rank,
