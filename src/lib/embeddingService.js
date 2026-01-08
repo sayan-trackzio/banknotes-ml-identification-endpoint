@@ -6,7 +6,7 @@
 import { pipeline, RawImage } from '@huggingface/transformers';
 
 // Optional (recommended for prod): avoids re-downloading models
-process.env.TRANSFORMERS_CACHE = './models';
+// process.env.TRANSFORMERS_CACHE = './hf_cache';
 
 let extractor = null;
 async function initExtractor() {
