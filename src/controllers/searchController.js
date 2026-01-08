@@ -1,8 +1,7 @@
 // Controller placeholder for /match
 // The handler accepts files from req.files (array of uploaded files via multer)
+import { validateImagesByLLM } from '../lib/llmGating.js';
 import { identify } from '../lib/MLIdentify.js';
-
-
 
 
 /* Controller / Handler for `/match` endpoint */
@@ -33,8 +32,19 @@ export async function match(req, res, next) {
       }
     }
 
-    // Call core identification logic
-    const mlIdentificationResults = await identify(req.files);
+    // Call core identification logic and LLM gating logic
+    const [llmGatingResult, mlIdentificationResults] = await Promise.all([
+      validateImagesByLLM(req.files),
+      identify(req.files)
+    ]);
+    // Check for LLM gating errors
+    if (llmGatingResult.error) { // Exit immediately, discarding the ML identification results
+      return res.status(400).json({
+        error: true,
+        aiErrorCode: llmGatingResult.errorCode,
+        reason: llmGatingResult.reason
+      });
+    }
 
     // Optional logging to GCS sink
     if (process.env.LOG_QUERY_METRICS === 'true' && req.query.gtid) {

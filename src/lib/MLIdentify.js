@@ -51,7 +51,7 @@ function computePercentile(score, universe) {
  * }>} Identification result
  */
 export async function identify(images) {
-  console.time("==> Time taken by ML Identification workflow")
+  if (process.env.LOG_TIMERS === 'true') console.time("==> Time taken by ML Identification workflow")
   // Generate and add a image permalink (s3 url) to each uploaded file
   const AWS_S3_BUCKET_NAME = process.env.AWS_S3_BUCKET_NAME ?? 'example-bucket';
   const AWS_REGION = process.env.AWS_REGION ?? 'us-west-2';
@@ -113,7 +113,7 @@ export async function identify(images) {
     if (process.env.LOG_TIMERS === 'true') console.time('Stage 5: ML-based Optimization');
   }
 
-  console.timeEnd("==> Time taken by ML Identification workflow")
+  if (process.env.LOG_TIMERS === 'true') console.timeEnd("==> Time taken by ML Identification workflow")
   return {
     ranked, // all ANN recall results ranked by heuristic scores
     head,  // final top N results after optional ML optimization

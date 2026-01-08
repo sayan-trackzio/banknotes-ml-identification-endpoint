@@ -13,6 +13,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@google-cloud/vertexai": "^1.10.0",
     "@huggingface/transformers": "^3.8.1",
     "@paralleldrive/cuid2": "^3.0.6",
     "@qdrant/js-client-rest": "^1.16.2",
