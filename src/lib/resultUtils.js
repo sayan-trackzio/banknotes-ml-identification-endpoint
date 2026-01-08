@@ -35,7 +35,7 @@ export function formatResults(candidate) {
       `${ARCHETYPE_IMAGES_BASE_URL}/${nn}_B.jpg`
     ] : [],
     _archetype: archetypeId,
-    archetypeId: archetypeId,
+    archetypeId,
     similarityScore: candidate.similarityScore || `${candidate._percentileScore?.toFixed(2)}%` || 'N/A',
     _finalScore: candidate._finalScore || null,
   };

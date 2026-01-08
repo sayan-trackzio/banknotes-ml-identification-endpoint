@@ -18,8 +18,8 @@ app.all('/health', (req, res) => {
 // Multer in-memory upload
 const upload = multer({ storage: multer.memoryStorage() });
 
-// Mount controller directly (expects two files in field 'images')
-app.post('/search', upload.array('images', 2), searchController.match);
+// Mount controller directly (expects two files in field 'files')
+app.post('/search', upload.array('files', 2), searchController.match);
 
 // Start server when run directly
 const __filename = fileURLToPath(import.meta.url);
