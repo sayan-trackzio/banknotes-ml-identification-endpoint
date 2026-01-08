@@ -120,19 +120,27 @@ export async function match(req, res, next) {
     const TOP_N = Number(process.env.TOP_N ?? 5);
     
     // Stage 0: Preprocessing (e.g., feature extraction)
+    if (process.env.LOG_TIMERS === 'true') console.time('Stage 0: Embedding Generation');
     const qVecs = await generateEmbeddings(req.files);
+    if (process.env.LOG_TIMERS === 'true') console.timeEnd('Stage 0: Embedding Generation');
 
     // Stage 1: Initial ANN search for recall
+    if (process.env.LOG_TIMERS === 'true') console.time('Stage 1: ANN Search');
     const annResults = await annSearch(qVecs);
     const recallResults = annResults.slice(0, ANN_RECALL_SIZE); // soft trim for BP stage
-    
-    // Stage 2: Add Bipartite scores
-    const recallResultsWithBp = await addBpScores(recallResults, qVecs);
+    if (process.env.LOG_TIMERS === 'true') console.timeEnd('Stage 1: ANN Search');
 
-    // Stage 3: Final rerank
+    // Stage 2: Add Bipartite scores
+    if (process.env.LOG_TIMERS === 'true') console.time('Stage 2: Bipartite Scoring');
+    const recallResultsWithBp = await addBpScores(recallResults, qVecs);
+    if (process.env.LOG_TIMERS === 'true') console.timeEnd('Stage 2: Bipartite Scoring');
+
+    // Stage 3: Heuristics based rerank
+    if (process.env.LOG_TIMERS === 'true') console.time('Stage 3: Heuristics based Reranking');
     let ranked = recallResultsWithBp
       .map(c => ({ ...c, _finalScore: heuristicScorer(c) }))
       .sort((a, b) => b._finalScore - a._finalScore)
+    if (process.env.LOG_TIMERS === 'true') console.timeEnd('Stage 3: Heuristics based Reranking');
 
     // Optional logging to GCS sink
     if (process.env.LOG_QUERY_METRICS === 'true' && req.query.gtid) {
@@ -158,10 +166,12 @@ export async function match(req, res, next) {
     }
     
     // Compute & add percentile scores (aprox for UI)
+    if (process.env.LOG_TIMERS === 'true') console.time('Stage 4: Match Percentage Computation for UI');
     ranked = ranked.map(c => ({
       ...c,
       _percentileScore: computePercentile(c._finalScore, ranked.map(c => c._finalScore))
     }));
+    if (process.env.LOG_TIMERS === 'true') console.timeEnd('Stage 4: Match Percentage Computation for UI');
 
     // Actually upload user images to S3 in the background (non-blocking)
     if (process.env.S3_UPLOAD_ENABLED === 'true') {
@@ -175,12 +185,14 @@ export async function match(req, res, next) {
     let heuristicHead = ranked.slice(0, TOP_N); // soft trim for final response
 
     if (process.env.APPLY_XGBOOST_OPTIMIZATION === 'true' && process.env.XGBOOST_SCORE_API_URL?.startsWith('http')) {
+      if (process.env.LOG_TIMERS === 'true') console.time('Stage 5: ML-based Optimization');
       const { optimizeHead } = await import('../lib/xgboostScorer.js');
       heuristicHead = await optimizeHead({
         candidates: ranked,
         topN: TOP_N,
         extraCandidatesSize: process.env.XGBOOST_EXTRA_CANDIDATES_SIZE ? Number(process.env.XGBOOST_EXTRA_CANDIDATES_SIZE) : 5
       });
+      if (process.env.LOG_TIMERS === 'true') console.time('Stage 5: ML-based Optimization');
     }
     
     // Send final response back to client
