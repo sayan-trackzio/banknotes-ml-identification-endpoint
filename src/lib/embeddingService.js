@@ -12,7 +12,10 @@ let extractor = null;
 async function initExtractor() {
   if (extractor) return extractor;
   const modelName = process.env.EMBED_MODEL || 'Xenova/dinov2-small';
-  extractor = await pipeline('image-feature-extraction', modelName);
+  // Explicitly set dtype to avoid warning
+  extractor = await pipeline('image-feature-extraction', modelName, {
+    dtype: 'fp32', 
+  });
   return extractor;
 }
 
