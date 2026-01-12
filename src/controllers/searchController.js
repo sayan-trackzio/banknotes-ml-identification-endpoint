@@ -33,8 +33,10 @@ export async function match(req, res, next) {
     }
 
     // Call core identification logic and LLM gating logic
+    const useLLMGating = process.env.LLM_GATE_ENABLED === 'true';
+    console.info(`LLM Gating is ${useLLMGating ? 'ENABLED' : 'DISABLED'}`);
     const [llmGatingResult, mlIdentificationResults] = await Promise.all([
-      validateImagesByLLM(req.files),
+      useLLMGating ? validateImagesByLLM(req.files) : Promise.resolve({ error: false }), // Temporarily disable LLM gating
       identify(req.files)
     ]);
     // Check for LLM gating errors
