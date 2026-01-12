@@ -6,6 +6,7 @@ import { identify } from '../lib/MLIdentify.js';
 
 /* Controller / Handler for `/match` endpoint */
 export async function match(req, res, next) {
+  const nn = req.query.nn || null;
   try {
     // Basic validation of uploaded files before processing
     if (!req.files || !Array.isArray(req.files) || req.files.length < 2) {
@@ -37,7 +38,7 @@ export async function match(req, res, next) {
     console.info(`LLM Gating is ${useLLMGating ? 'ENABLED' : 'DISABLED'}`);
     const [llmGatingResult, mlIdentificationResults] = await Promise.all([
       useLLMGating ? validateImagesByLLM(req.files) : Promise.resolve({ error: false }), // Temporarily disable LLM gating
-      identify(req.files)
+      identify(req.files, nn)
     ]);
     // Check for LLM gating errors
     if (llmGatingResult.error) { // Exit immediately, discarding the ML identification results
@@ -84,6 +85,7 @@ export async function match(req, res, next) {
     // Send final response back to client
     return res.json({
       error: false,
+      ranks: nn ? mlIdentificationResults?.ranks : undefined,
       data: {
         imageUrls: mlIdentificationResults.imageUrls,
         matchesFoundCount: mlIdentificationResults.matchesFoundCount,

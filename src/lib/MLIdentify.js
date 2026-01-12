@@ -50,7 +50,7 @@ function computePercentile(score, universe) {
  *   matches: Array
  * }>} Identification result
  */
-export async function identify(images) {
+export async function identify(images, nn = null) {
   if (process.env.LOG_TIMERS === 'true') console.time("==> Time taken by ML Identification workflow")
   // Generate and add a image permalink (s3 url) to each uploaded file
   const AWS_S3_BUCKET_NAME = process.env.AWS_S3_BUCKET_NAME ?? 'example-bucket';
@@ -82,13 +82,13 @@ export async function identify(images) {
   if (process.env.LOG_TIMERS === 'true') console.time('Stage 2: Bipartite Scoring');
   const recallResultsWithBp = await addBpScores(recallResults, qVecs); // Compute and add BP scores to each candidate
   if (process.env.LOG_TIMERS === 'true') console.timeEnd('Stage 2: Bipartite Scoring');
-
+  
   // Stage 3: Heuristics based rerank
   if (process.env.LOG_TIMERS === 'true') console.time('Stage 3: Heuristics based Reranking');
   let ranked = recallResultsWithBp
     .map(c => ({ ...c, _finalScore: heuristicScorer(c) }))
     .sort((a, b) => b._finalScore - a._finalScore);
-  if (process.env.LOG_TIMERS === 'true') console.timeEnd('Stage 3: Heuristics based Reranking');
+    if (process.env.LOG_TIMERS === 'true') console.timeEnd('Stage 3: Heuristics based Reranking');
 
   // Stage 4: Compute & add percentile scores (aprox - for UI)
   if (process.env.LOG_TIMERS === 'true') console.time('Stage 4: Match Percentage Computation for UI');
@@ -114,11 +114,25 @@ export async function identify(images) {
   }
 
   if (process.env.LOG_TIMERS === 'true') console.timeEnd("==> Time taken by ML Identification workflow")
+  
+  // Compute ranks for a specific Numista Item Number if provided (DEBUG)
+  let ranks
+  if (nn) {
+    const annNumistaNumbers = annResults.map(r => r.payload?.archetypeDetails?.numistaItemNumber);
+    const finalNumistaNumbers = ranked.map(r => r.payload?.archetypeDetails?.numistaItemNumber);
+    ranks = {
+      ann: annNumistaNumbers.findIndex(n => String(n) === String(`N# ${nn}`)) + 1,
+      heuristic: ranked.findIndex(n => String(n.payload?.archetypeDetails?.numistaItemNumber) === String(`N# ${nn}`)) + 1
+    }
+    console.info(`>>>>>>>>>>>> Numista Item Number N# ${nn} Ranks => ANN: ${ranks.ann}, Heuristic: ${ranks.heuristic} <<<<<<<<<<<<<`);
+  }
+
   return {
     ranked, // all ANN recall results ranked by heuristic scores
     head,  // final top N results after optional ML optimization
     imageUrls: images.map(f => f.permalink),
     matchesFoundCount: head.length,
-    matches: head.map(formatResults)
+    matches: head.map(formatResults),
+    ranks: nn ? ranks : undefined
   };
 }
