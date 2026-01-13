@@ -8,13 +8,17 @@ export async function annSearch(qVecs) {
   }
 
   const ANN_OVERFETCH_SIZE = Number(process.env.ANN_OVERFETCH_SIZE ?? 1000);
+  const ANN_RECALL_SIZE = Number(process.env.ANN_RECALL_SIZE ?? 300);
 
   // Prepare batch search requests
   const searches = qVecs.map(vector => ({
     query: vector,
-    limit: ANN_OVERFETCH_SIZE,
+    limit: ANN_RECALL_SIZE,
     with_payload: true,
-    with_vector: false
+    with_vector: false,
+    params: {
+      hnsw_ef: ANN_OVERFETCH_SIZE
+    }
   }));
 
   // Perform batch ANN search

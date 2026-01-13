@@ -74,8 +74,8 @@ export async function identify(images, nn = null) {
 
   // Stage 1: Initial ANN search for recall
   if (process.env.LOG_TIMERS === 'true') console.time('Stage 1: ANN Search');
-  const annResults = await annSearch(qVecs); // Full ANN results (overfetched)
-  const recallResults = annResults.slice(0, ANN_RECALL_SIZE); // Soft Trim to recall size
+  const recallResults = await annSearch(qVecs); // Full ANN results (Max size: 2 X ANN_RECALL_SIZE)
+  // const recallResults = annResults.slice(0, ANN_RECALL_SIZE); // Soft Trim to recall size
   if (process.env.LOG_TIMERS === 'true') console.timeEnd('Stage 1: ANN Search');
 
   // Stage 2: Add Bipartite scores
@@ -118,7 +118,7 @@ export async function identify(images, nn = null) {
   // Compute ranks for a specific Numista Item Number if provided (DEBUG)
   let ranks
   if (nn) {
-    const annNumistaNumbers = annResults.map(r => r.payload?.archetypeDetails?.numistaItemNumber);
+    const annNumistaNumbers = recallResults.map(r => r.payload?.archetypeDetails?.numistaItemNumber);
     const finalNumistaNumbers = ranked.map(r => r.payload?.archetypeDetails?.numistaItemNumber);
     ranks = {
       ann: annNumistaNumbers.findIndex(n => String(n) === String(`N# ${nn}`)) + 1,
