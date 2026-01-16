@@ -1,3 +1,4 @@
+/** Currently unused!! Retained only for records */
 import { generateEmbeddings } from './imageEmbeddingService.js';
 import { annSearch } from './annService.js';
 import { addBpScores } from './bipartiteService.js';
