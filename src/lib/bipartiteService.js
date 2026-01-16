@@ -1,4 +1,5 @@
 import qdrant from './qdrantClient.js';
+import { cosine } from './utils.js';
 
 // Fetch item vectors (2 per item)
 async function fetchItemVectors(itemIds) {
@@ -28,12 +29,6 @@ async function fetchItemVectors(itemIds) {
   return map;
 }
 
-//  Cosine similarity (L2-normalized vectors assumed)
-function cosine(a, b) {
-  let s = 0;
-  for (let i = 0; i < a.length; i++) s += a[i] * b[i];
-  return s;
-}
 
 // Bipartite score with gap
 function bipartiteScore(qVecs, cVecs) {

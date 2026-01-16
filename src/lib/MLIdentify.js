@@ -1,43 +1,9 @@
-import { generateEmbeddings } from './embeddingService.js';
+import { generateEmbeddings } from './imageEmbeddingService.js';
 import { annSearch } from './annService.js';
 import { addBpScores } from './bipartiteService.js';
 import { formatResults } from './resultUtils.js';
+import { heuristicScorer, computePercentile } from './utils.js';
 
-// Heuristic scorer and percentile computation copied from controller
-function heuristicScorer(c) {
-  const rankBonus = 1 / (1 + c.ann_rank);
-  return (
-    0.8 * c.ann_score +
-    0.3 * rankBonus +
-    0.6 * c.bp_best +
-    0.15 * c.bp_gap
-  );
-}
-
-function computePercentile(score, universe) {
-  const mean = arr => arr.reduce((a, b) => a + b, 0) / arr.length;
-  const std = (arr, mu) =>
-    Math.sqrt(arr.reduce((s, x) => s + (x - mu) ** 2, 0) / arr.length);
-  function normalCDF(z) {
-    const t = 1 / (1 + 0.2316419 * Math.abs(z));
-    const d = 0.3989423 * Math.exp(-z * z / 2);
-    let p = d * t * (
-      0.3193815 +
-      t * (-0.3565638 +
-      t * (1.781478 +
-      t * (-1.821256 +
-      t * 1.330274)))
-    );
-    if (z > 0) p = 1 - p;
-    return p;
-  }
-  const mu = mean(universe);
-  const sigma = std(universe, mu);
-  if (sigma === 0) return 50;
-  const z = (score - mu) / sigma;
-  const percentile = normalCDF(z) * 100;
-  return Math.max(0, Math.min(100, percentile));
-}
 
 /**
  * Core identification logic extracted from controller
