@@ -49,16 +49,21 @@ function bipartiteScore(qVecs, cVecs) {
 
 // Add BP features to recall candidates set
 export async function addBpScores(buffer, qVecs) {
-  const itemIds = buffer.map(c => c.item_id);
-  const itemVecMap = await fetchItemVectors(itemIds);
+  if (process.env.LOG_TIMERS === 'true') console.time("==> Time taken by Bipartite Scoring");
+  try {
+    const itemIds = buffer.map(c => c.item_id);
+    const itemVecMap = await fetchItemVectors(itemIds);
 
-  return buffer.map(c => {
-    const cVecs = itemVecMap.get(c.item_id);
-    if (!cVecs || cVecs.length !== 2) {
-      return { ...c, bp_best: 0, bp_gap: 0 };
-    }
+    return buffer.map(c => {
+      const cVecs = itemVecMap.get(c.item_id);
+      if (!cVecs || cVecs.length !== 2) {
+        return { ...c, bp_best: 0, bp_gap: 0 };
+      }
 
-    const { bp_best, bp_gap } = bipartiteScore(qVecs, cVecs);
-    return { ...c, bp_best, bp_gap };
-  });
+      const { bp_best, bp_gap } = bipartiteScore(qVecs, cVecs);
+      return { ...c, bp_best, bp_gap };
+    });
+  } finally {
+    if (process.env.LOG_TIMERS === 'true') console.timeEnd("==> Time taken by Bipartite Scoring");
+  }
 }

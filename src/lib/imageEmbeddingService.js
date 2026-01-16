@@ -20,6 +20,7 @@ async function initExtractor() {
 }
 
 export async function generateEmbeddings(files) {
+  if (process.env.LOG_TIMERS === 'true') console.time("==> Time taken by Image Embeddings");
   try {
     const inputs = Array.isArray(files) ? files : Array.from(arguments);
     const pipe = await initExtractor();
@@ -68,6 +69,8 @@ export async function generateEmbeddings(files) {
   } catch (error) {
     console.error('==> Error in generateEmbeddings:', error);
     throw error;
+  } finally {
+    if (process.env.LOG_TIMERS === 'true') console.timeEnd("==> Time taken by Image Embeddings");
   }
 }
 

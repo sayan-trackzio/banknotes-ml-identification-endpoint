@@ -54,8 +54,6 @@ export async function post(req, res, next) {
 
     /* Core business logic starts here */
     const useLLMGating = process.env.LLM_GATE_ENABLED === 'true';
-    const logTimers = process.env.LOG_TIMERS === 'true';
-
     const [llmResult, [recallResults, recallResultsWithBipScores]] = await Promise.all([
       useLLMGating ? validateImagesByLLM(uploadedImages) : Promise.resolve({ error: false, name: null }), // Temporarily disable LLM gating
       (async () => {
@@ -75,23 +73,20 @@ export async function post(req, res, next) {
       });
     }
 
-    // If applicable, compute and add text scores to each candidate
-    let recallResultsWithBipAndTextScores = recallResultsWithBipScores;
-    if (useLLMGating && llmResult.name) {
-      // const nameLower = llmResult.name.toLowerCase();
-      // recallResultsWithBipAndTextScores = await addTextScores(recallResultsWithBipScores, nameLower);
-    }
-
     // Heuristics based rerank
-    let ranked = recallResultsWithBipAndTextScores // may or may not have text scores added
+    if (process.env.LOG_TIMERS === 'true') console.time("==> Time taken by Heuristic Reranker");
+    let ranked = recallResultsWithBipScores
       .map(c => ({ ...c, _finalScore: heuristicScorer(c) }))
       .sort((a, b) => b._finalScore - a._finalScore);
-
+    if (process.env.LOG_TIMERS === 'true') console.timeEnd("==> Time taken by Heuristic Reranker");
+    
     // Compute & add percentile scores (aprox - for UI)
+    if (process.env.LOG_TIMERS === 'true') console.time("==> Time taken by Percentile Computation");
     ranked = ranked.map(c => ({
       ...c,
       _percentileScore: computePercentile(c._finalScore, ranked.map(c => c._finalScore))
     }));
+    if (process.env.LOG_TIMERS === 'true') console.timeEnd("==> Time taken by Percentile Computation");
 
 
     // Optional logging to GCS sink
