@@ -4,6 +4,7 @@ import multer from 'multer';
 import morgan from 'morgan';
 import * as searchController from './controllers/searchController.js';
 import { fileURLToPath } from 'url';
+import { verifyHmacSignature } from './middleware.js';
 
 const app = express();
 app.use(express.json());
@@ -19,7 +20,7 @@ app.all('/health', (req, res) => {
 const upload = multer({ storage: multer.memoryStorage() });
 
 // Mount controller directly (expects two files in field 'files')
-app.post('/search', upload.array('files', 2), searchController.post);
+app.post('/search', verifyHmacSignature, upload.array('files', 2), searchController.post);
 
 // Start server when run directly
 const __filename = fileURLToPath(import.meta.url);
