@@ -19,7 +19,7 @@ export async function uploadToS3InBackground(files) {
   if (!Array.isArray(files)) return;
 
   await Promise.all(files.map(async (file) => {
-    const Bucket = process.env.S3_BUCKET_NAME;
+    const Bucket = process.env.AWS_S3_BUCKET_NAME;
     const Key = file.s3Key;
     let Body;
 
@@ -42,9 +42,10 @@ export async function uploadToS3InBackground(files) {
 
     try {
       await s3.send(new PutObjectCommand(params));
+      console.log(`==> S3 upload successful for ${Key}`);
     } catch (err) {
       console.error(`==> S3 upload failed for ${Key}:`, err);
-      thow err;
+      throw err;
     }
   }));
 }
