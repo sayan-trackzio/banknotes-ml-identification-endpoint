@@ -1,5 +1,6 @@
 const { init: cuidInit } = await import('@paralleldrive/cuid2');
 const cuidGen = (n = 11) => cuidInit({ length: n })();
+import path from 'path';
 // Controller placeholder for /match
 // The handler accepts files from req.files (array of uploaded files via multer)
 import { validateImagesByLLM } from '../lib/llmGating.js';
@@ -47,7 +48,9 @@ export async function post(req, res, next) {
     const AWS_REGION = process.env.AWS_REGION ?? 'us-west-2';
     for (const file of uploadedImages) {
       // Use cuid2 for key generation
-      const key = cuidGen();
+      const fileUniqueId = cuidGen();
+      const fileExt = path.extname(file.originalname)?.toLowerCase() ?? ''
+      const key = `specimen-${fileUniqueId}${fileExt}`
       file.s3Key = key;
       file.permalink = `https://${AWS_S3_BUCKET_NAME}.s3.${AWS_REGION}.amazonaws.com/${key}`;
     }
