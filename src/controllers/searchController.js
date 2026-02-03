@@ -3,12 +3,13 @@ const cuidGen = (n = 11) => cuidInit({ length: n })();
 import path from 'path';
 // Controller placeholder for /match
 // The handler accepts files from req.files (array of uploaded files via multer)
-import { validateImagesByLLM } from '../lib/llmGating.js';
 import { generateEmbeddings } from '../lib/imageEmbeddingService.js';
 import { annSearch } from '../lib/annService.js';
 import { addBpScores } from '../lib/bipartiteService.js';
 import { formatResults } from '../lib/resultUtils.js';
 import { heuristicScorer, computePercentile } from '../lib/utils.js';
+
+import { validateImagesByLLM } from '../lib/llmGating.js';
 
 /* Controller / Handler for the `/search` endpoint */
 export async function post(req, res, next) {
@@ -24,7 +25,7 @@ export async function post(req, res, next) {
     }
 
     const uploadedImages = req.files;
-  
+
     // Additional validation: mimetype and file size
     const ALLOWED_MIMETYPES = ['image/jpeg', 'image/png', 'image/webp'];
     const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -53,6 +54,27 @@ export async function post(req, res, next) {
       const key = `specimen-${fileUniqueId}${fileExt}`
       file.s3Key = key;
       file.permalink = `https://${AWS_S3_BUCKET_NAME}.s3.${AWS_REGION}.amazonaws.com/${key}`;
+    }
+
+    // CNN Gating to let pass only true banknotes:
+    if (process.env.CNN_GATE_ENABLED === 'true') { // NOTE: Disable LLM_GATING if CNN_GATING is enabled
+      const { cnnGate } = await import('../lib/cnnGating/index.js');
+      // Prepare inputs:
+      const imageInputs = uploadedImages.map(f => (f.path ? f.path : (f.buffer ? f.buffer : undefined)));
+      const missingIdx = imageInputs.findIndex(i => i === undefined);
+      if (missingIdx !== -1) {
+        return res.status(400).json({ error: true, reason: `Uploaded file at index ${missingIdx} missing path or buffer` });
+      }
+      // Actual gating using a custom trained cnn model:
+      const cnnPass = await cnnGate(imageInputs)
+      if (!cnnPass) {
+        console.warn("CNN gating Failed!!!!!!!!!!!!!!!")
+        return res.status(400).json({
+          error: true,
+          aiErrorCode: 'E003',
+          reason: "Banknote not detected! Use real banknotes with brighter light and less blur. Keep it centered."
+        });
+      }
     }
 
     /* Core business logic starts here */
