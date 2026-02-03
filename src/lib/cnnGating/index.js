@@ -3,7 +3,7 @@ import { getSession, ort } from './singleton.js';
 
 const IMG_SIZE = 224;
 const CONFIDENCE_THRESHOLD = Number(process.env.CNN_CONFIDENCE_THRESHOLD ?? 0.8);
-const HIGH_CONFIDENCE_THRESHOLD = 0.985;
+const HIGH_CONFIDENCE_THRESHOLD = Number(process.env.CNN_HIGH_CONFIDENCE_THRESHOLD ?? 0.985);
 
 // Normalization parameters used during training
 const MEAN = [0.485, 0.456, 0.406];
@@ -87,7 +87,7 @@ export async function cnnGate(paths) {
     let matrix = await computeConfidenceMatrix(paths);
     matrix = matrix.map(el => ({
       ...el,
-      isBanknote: (el.banknote > el.not_banknote) && el.banknote > CONFIDENCE_THRESHOLD
+      isBanknote: (el.banknote > el.not_banknote) && (el.banknote > CONFIDENCE_THRESHOLD)
     }));
     
     console.debug('Confidence Matrix ==> ', matrix)
@@ -96,21 +96,18 @@ export async function cnnGate(paths) {
     const allBanknotes = matrix.every(el => el.isBanknote);
     
     if (allBanknotes) {
-      return true;
+      return true; // PASS
     }
 
-    // Special case to PASS: one is not a banknote, but the other is, and has very high confidence of that
-    const banknoteCount = matrix.filter(el => el.isBanknote).length;
-    if (banknoteCount === 1) {
-      const highConfidenceBanknote = matrix.some(el => 
-        el.isBanknote && el.banknote >= HIGH_CONFIDENCE_THRESHOLD
-      );
-      if (highConfidenceBanknote) {
-        return true;
-      }
+    // Special case to PASS: at least one is a banknote with very high confidence. the other may or may not be a banknote.
+    const highConfidenceBanknote = matrix.some(el => 
+      el.isBanknote && (el.banknote >= HIGH_CONFIDENCE_THRESHOLD)
+    );
+    if (highConfidenceBanknote) {
+      return true; // PASS
     }
 
-    return false;
+    return false; // Don't PASS
   } catch (error) {
     console.error('==> CNN Gate error:', error);
     throw error;
